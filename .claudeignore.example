@@ -1,0 +1,23 @@
+# .claudeignore — files and patterns Claude is not allowed to read, edit, or search
+#
+# Rename this file to .claudeignore and add your own patterns.
+# Syntax is similar to .gitignore: one pattern per line, supports glob wildcards.
+# Lines starting with # are comments.
+
+# --- Secrets & credentials ---
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
+
+# --- Specific files ---
+config/database.yml
+config/secrets.yml
+
+# --- Directories (block everything inside) ---
+private/*
+vault/*

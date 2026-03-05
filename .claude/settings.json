@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${workspaceFolder}/.claude/hooks/check-claudeignore.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
