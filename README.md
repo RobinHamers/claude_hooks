@@ -1,73 +1,132 @@
-# Claude Hooks, Skills & Commands
+# Claude Hooks & Commands
 
-A collection of [Claude Code](https://claude.ai/claude-code) hooks, skills, and commands to improve security, control, and productivity.
+A personal collection of [Claude Code](https://claude.ai/claude-code) hooks and slash commands.
 
 ---
 
-## What are Claude Code hooks?
+## Setup (single machine)
 
-Hooks are shell commands that run automatically in response to Claude Code events — before or after tool calls like reading a file, editing code, running a bash command, etc. They let you enforce rules, block actions, or log activity without relying on prompts.
+Everything lives in this repo. `~/.claude/` just links/references here — no duplication.
 
-## What are Claude Code skills?
+```bash
+git clone git@github.com:RobinHamers/claude_hooks.git ~/claude_hooks
 
-Skills are reusable prompt templates invoked via `/skill-name` in Claude Code. They are packaged as `.skill` files and live in `~/.claude/skills/`.
+# Symlink commands directory
+rm -rf ~/.claude/commands
+ln -s ~/claude_hooks/Commands ~/.claude/commands
 
-## What are Claude Code commands?
+# Make hooks executable
+chmod +x ~/claude_hooks/.claude/hooks/*.sh
+```
 
-Commands are slash commands you invoke in Claude Code with `/command-name`. They are defined as markdown files inside a **plugin** — a small folder with a specific structure that Claude Code loads at startup.
+Then update `~/.claude/settings.json` to reference the hooks (see [settings template](#settings-template) below).
 
 ---
 
 ## Hooks
 
+Hook scripts live in `.claude/hooks/`. They are registered in `~/.claude/settings.json` using absolute paths to this repo.
+
 ### `check-claudeignore` — Block file access via `.claudeignore`
 
-Prevents Claude from reading, editing, or searching files that match patterns listed in a `.claudeignore` file at the root of your project.
+**Event:** `PreToolUse` — `Read | Edit | Grep`
 
-**Blocked tools:** `Read`, `Edit`, `Grep`
+Prevents Claude from reading, editing, or searching files that match patterns in a `.claudeignore` file at your project root. Syntax is similar to `.gitignore`.
 
-**How it works:**
-1. Before Claude opens a file, the hook intercepts the tool call
-2. It walks up the directory tree to find a `.claudeignore` file
-3. If the file path matches any pattern, the tool call is blocked with a clear error message
+```
+# .claudeignore example
+.env
+secrets.json
+*.pem
+private/*
+```
 
 **Example error:**
 ```
-Blocked: '/project/secrets/.env' matches '*.env' in .claudeignore
+Blocked: '/project/.env' matches '*.env' in .claudeignore
 ```
 
-### Setup
+---
 
-**Option A — Use in your own project (recommended for teams)**
+### `block-force-push` — Block `git push --force`
 
-Copy the `.claude/` folder and `.claudeignore.example` into your project:
+**Event:** `PreToolUse` — `Bash`
 
-```bash
-cp -r .claude /your-project/
-cp .claudeignore.example /your-project/.claudeignore
+Intercepts any bash command containing `git push --force` or `git push -f` and blocks it. Claude must be explicitly told to force push for it to proceed.
+
+**Example error:**
+```
+Blocked: 'git push --force' detected. Confirm explicitly if you want to force push.
 ```
 
-Then commit everything:
+---
 
-```bash
-git add .claude/ .claudeignore
-git update-index --chmod=+x .claude/hooks/check-claudeignore.sh
-git commit -m "add Claude hooks"
-```
+### `notify-on-stop` — Desktop notification when Claude finishes
 
-Claude Code will automatically pick up `.claude/settings.json` when your colleagues open the project. They will be prompted once to approve the hook.
+**Event:** `Stop`
 
-**Option B — Install globally (applies to all your projects)**
+Sends a desktop notification via `notify-send` when Claude finishes a task. Useful when running long operations in the background.
 
-Copy the hook script somewhere permanent:
+Requires `notify-send` (pre-installed on most Linux desktops). Silent no-op if not available.
 
-```bash
-mkdir -p ~/.claude/hooks
-cp .claude/hooks/check-claudeignore.sh ~/.claude/hooks/
-chmod +x ~/.claude/hooks/check-claudeignore.sh
-```
+---
 
-Then add the hook to `~/.claude/settings.json`:
+## Commands
+
+Command files live in `Commands/` as `.md` files. `~/.claude/commands/` is a symlink to this directory, so all commands are available immediately after cloning.
+
+Invoke any command with `/command-name` in Claude Code.
+
+### `/pull-all`
+
+Scans all git repos under `~/` (up to 2 levels deep), pulls the latest changes on each, and reports what updated, what was already up to date, and what failed (e.g. local conflicts).
+
+### `/commit-all`
+
+Scans all git repos under `~/` for uncommitted changes, shows a diff summary for each, and asks interactively whether to commit and push. Never commits without your confirmation.
+
+### `/review-changes`
+
+Read-only version of `commit-all`. Shows a human-readable diff summary across all repos — useful for a daily review of what changed. No staging or committing.
+
+### `/gcp-status`
+
+Shows the current GCP/Vertex AI status for your active project: running/pending custom jobs, recent batch prediction jobs, and billing account. Tries `europe-west1` first, falls back to `us-central1`.
+
+Requires `gcloud` authenticated (`gcloud auth login`).
+
+### `/explore-dataset`
+
+Given a file path, runs a quick EDA and prints a structured summary. Supports:
+
+| Format | Library |
+|--------|---------|
+| `.csv`, `.parquet` | pandas |
+| `.geojson`, `.gpkg` | geopandas |
+| `.tif`, `.tiff` | rasterio |
+
+Reports shape, dtypes, nulls, value ranges, CRS (for geo files), and flags anomalies like high null rates or suspicious ranges.
+
+### `/lint-fix`
+
+Runs linting and auto-formatting on Python files in the current repo. Targets only files changed since last commit (or all `.py` files if nothing is staged). Prefers `ruff`; falls back to `black` + `isort`.
+
+Install ruff if missing: `pip install ruff`
+
+### `/requirements-audit`
+
+Scans all `requirements*.txt` files under `~/` and reports:
+- Unpinned packages (no `==`)
+- Loosely pinned packages (`>=`, `~=`)
+- Imports in Python files with no matching requirement
+
+Focuses on common ML/geo packages: `torch`, `numpy`, `pandas`, `geopandas`, `rasterio`, `transformers`.
+
+---
+
+## Settings template
+
+`~/.claude/settings.json`:
 
 ```json
 {
@@ -78,7 +137,26 @@ Then add the hook to `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "/home/YOUR_USERNAME/.claude/hooks/check-claudeignore.sh"
+            "command": "/home/YOUR_USERNAME/claude_hooks/.claude/hooks/check-claudeignore.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/claude_hooks/.claude/hooks/block-force-push.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/claude_hooks/.claude/hooks/notify-on-stop.sh"
           }
         ]
       }
@@ -87,157 +165,15 @@ Then add the hook to `~/.claude/settings.json`:
 }
 ```
 
-### Configuring `.claudeignore`
-
-Rename `.claudeignore.example` to `.claudeignore` in your project root and add the files or patterns you want to protect. The syntax is similar to `.gitignore`.
-
-```bash
-# Block specific files
-.env
-secrets.json
-
-# Block by extension
-*.pem
-*.key
-
-# Block a directory
-private/*
-vault/*
-```
-
-> `.claudeignore` should be committed to your repo so the rules apply to your whole team.
-
----
-
-## Skills
-
-Skills live in the `Skills/` directory as `.skill` files. To use them, copy the file into your Claude Code skills directory:
-
-```bash
-cp Skills/<skill-name>.skill ~/.claude/skills/
-```
-
-Then invoke it in Claude Code with:
-
-```
-/<skill-name>
-```
-
-### Available skills
-
-| Skill | Description |
-|---|---|
-| `morning-email-briefing` | Generates a morning briefing from your emails |
-
----
-
-## Commands
-
-Commands live in the `Commands/` directory as `.md` files. Installing a command requires setting up a small **plugin folder** and registering it with Claude Code. Do this once — then every command you add to the folder becomes a new slash command automatically.
-
-### One-time setup
-
-**1. Create the plugin folder structure**
-
-```bash
-mkdir -p ~/.claude/plugins/cache/local-plugins/my-commands/local/commands
-mkdir -p ~/.claude/plugins/cache/local-plugins/my-commands/local/.claude-plugin
-```
-
-**2. Create the plugin metadata file**
-
-Create `~/.claude/plugins/cache/local-plugins/my-commands/local/.claude-plugin/plugin.json`:
-
-```json
-{
-  "name": "my-commands",
-  "description": "My local Claude Code commands",
-  "author": {
-    "name": "Your Name"
-  }
-}
-```
-
-**3. Register it in `~/.claude/plugins/installed_plugins.json`**
-
-Add the following entry inside the `"plugins"` object:
-
-```json
-"my-commands@local-plugins": [
-  {
-    "scope": "user",
-    "installPath": "/home/YOUR_USERNAME/.claude/plugins/cache/local-plugins/my-commands/local",
-    "version": "local",
-    "installedAt": "2026-01-01T00:00:00.000Z",
-    "lastUpdated": "2026-01-01T00:00:00.000Z"
-  }
-]
-```
-
-**4. Enable it in `~/.claude/settings.json`**
-
-Add to the `"enabledPlugins"` object:
-
-```json
-"my-commands@local-plugins": true
-```
-
-**5. Restart Claude Code**
-
-### Adding a command
-
-Copy any `.md` file from the `Commands/` directory into your plugin's `commands/` folder:
-
-```bash
-cp Commands/commit-all.md ~/.claude/plugins/cache/local-plugins/my-commands/local/commands/
-```
-
-Then restart Claude Code. The command is immediately available as `/commit-all`.
-
-Each command file can optionally have a frontmatter header:
-
-```markdown
----
-description: Short description shown in /help
-allowed-tools: [Bash, Read, Edit]
----
-```
-
-### Available commands
-
-| Command | Description |
-|---|---|
-| `commit-all` | Scans all git repos in your home folder, shows changes, and lets you commit and push each one interactively |
-
-#### `commit-all` — Interactive multi-repo commit & push
-
-Scans up to 2 levels deep in your home directory for git repositories, shows the diff/status for each one that has uncommitted changes, and asks you repo by repo whether to commit and push.
-
-**Usage:**
-```
-/commit-all
-```
-
-**What it does:**
-1. Finds all git repos under your home folder
-2. Skips repos with no changes
-3. For each dirty repo, shows a diff summary and asks: commit and push? (yes/no/skip)
-4. Commits with a descriptive message and pushes only when you confirm
-5. Prints a final summary of what was committed and what was skipped
-
-> **Note:** The `commit-all.md` file scans `/home/robin-hamers/` by default. Edit the path inside the file to match your own username before using it.
-
 ---
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/claude-code)
-- Python 3 (used inside hook scripts for JSON parsing and glob matching)
-- bash
-- git
-
----
-
-## Contributing
-
-Feel free to open a PR to add new hooks, skills, or commands.
+- `bash`
+- `python3` (used in hook scripts for JSON parsing)
+- `git`
+- `gcloud` — for `/gcp-status`
+- `ruff` or `black` — for `/lint-fix`
+- `pandas`, `geopandas`, `rasterio` — for `/explore-dataset`
+- `notify-send` — for `notify-on-stop` hook (optional)
