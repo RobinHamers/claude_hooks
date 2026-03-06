@@ -1,6 +1,8 @@
-# Claude Hooks & Skills
+# Claude Hooks, Skills & Commands
 
-A collection of [Claude Code](https://claude.ai/claude-code) hooks and skills to improve security, control, and productivity.
+A collection of [Claude Code](https://claude.ai/claude-code) hooks, skills, and commands to improve security, control, and productivity.
+
+---
 
 ## What are Claude Code hooks?
 
@@ -8,7 +10,11 @@ Hooks are shell commands that run automatically in response to Claude Code event
 
 ## What are Claude Code skills?
 
-Skills are reusable prompt templates invoked via `/skill-name` in Claude Code. They expand into full prompts, letting you automate repeated workflows (e.g. `/morning-email-briefing`).
+Skills are reusable prompt templates invoked via `/skill-name` in Claude Code. They are packaged as `.skill` files and live in `~/.claude/skills/`.
+
+## What are Claude Code commands?
+
+Commands are plain markdown files placed in `~/.claude/commands/`. Each file becomes a custom slash command. When you type `/command-name`, Claude receives the file's content as a prompt and executes it.
 
 ---
 
@@ -30,11 +36,9 @@ Prevents Claude from reading, editing, or searching files that match patterns li
 Blocked: '/project/secrets/.env' matches '*.env' in .claudeignore
 ```
 
----
+### Setup
 
-## Setup
-
-### Option A — Use in your own project (recommended for teams)
+**Option A — Use in your own project (recommended for teams)**
 
 Copy the `.claude/` folder and `.claudeignore.example` into your project:
 
@@ -53,7 +57,7 @@ git commit -m "add Claude hooks"
 
 Claude Code will automatically pick up `.claude/settings.json` when your colleagues open the project. They will be prompted once to approve the hook.
 
-### Option B — Install globally (applies to all your projects)
+**Option B — Install globally (applies to all your projects)**
 
 Copy the hook script somewhere permanent:
 
@@ -83,9 +87,7 @@ Then add the hook to `~/.claude/settings.json`:
 }
 ```
 
----
-
-## Configuring `.claudeignore`
+### Configuring `.claudeignore`
 
 Rename `.claudeignore.example` to `.claudeignore` in your project root and add the files or patterns you want to protect. The syntax is similar to `.gitignore`.
 
@@ -107,28 +109,18 @@ vault/*
 
 ---
 
-## Requirements
-
-- [Claude Code](https://claude.ai/claude-code)
-- Python 3 (used inside the hook script for JSON parsing and glob matching)
-- bash
-
----
-
----
-
 ## Skills
 
 Skills live in the `Skills/` directory as `.skill` files. To use them, copy the file into your Claude Code skills directory:
 
 ```bash
-cp Skills/morning-email-briefing.skill ~/.claude/skills/
+cp Skills/<skill-name>.skill ~/.claude/skills/
 ```
 
 Then invoke it in Claude Code with:
 
 ```
-/morning-email-briefing
+/<skill-name>
 ```
 
 ### Available skills
@@ -139,6 +131,54 @@ Then invoke it in Claude Code with:
 
 ---
 
+## Commands
+
+Commands live in the `Commands/` directory as `.md` files. To use them, copy the file into your Claude Code commands directory:
+
+```bash
+mkdir -p ~/.claude/commands
+cp Commands/<command-name>.md ~/.claude/commands/
+```
+
+Then invoke it in Claude Code with:
+
+```
+/<command-name>
+```
+
+### Available commands
+
+| Command | Description |
+|---|---|
+| `commit-all` | Scans all git repos in your home folder, shows changes, and lets you commit and push each one interactively |
+
+#### `commit-all` — Interactive multi-repo commit & push
+
+Scans up to 2 levels deep in your home directory for git repositories, shows the diff/status for each one that has uncommitted changes, and asks you repo by repo whether to commit and push.
+
+**Usage:**
+```
+/commit-all
+```
+
+**What it does:**
+1. Finds all git repos under your home folder
+2. Skips repos with no changes
+3. For each dirty repo, shows a diff summary and asks: commit and push? (yes/no/skip)
+4. Commits with a descriptive message and pushes only when you confirm
+5. Prints a final summary of what was committed and what was skipped
+
+---
+
+## Requirements
+
+- [Claude Code](https://claude.ai/claude-code)
+- Python 3 (used inside hook scripts for JSON parsing and glob matching)
+- bash
+- git
+
+---
+
 ## Contributing
 
-Feel free to open a PR to add new hooks, skills, or improve existing ones.
+Feel free to open a PR to add new hooks, skills, or commands.
