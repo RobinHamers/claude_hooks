@@ -14,7 +14,7 @@ Skills are reusable prompt templates invoked via `/skill-name` in Claude Code. T
 
 ## What are Claude Code commands?
 
-Commands are plain markdown files placed in `~/.claude/commands/`. Each file becomes a custom slash command. When you type `/command-name`, Claude receives the file's content as a prompt and executes it.
+Commands are slash commands you invoke in Claude Code with `/command-name`. They are defined as markdown files inside a **plugin** — a small folder with a specific structure that Claude Code loads at startup.
 
 ---
 
@@ -133,17 +133,74 @@ Then invoke it in Claude Code with:
 
 ## Commands
 
-Commands live in the `Commands/` directory as `.md` files. To use them, copy the file into your Claude Code commands directory:
+Commands live in the `Commands/` directory as `.md` files. Installing a command requires setting up a small **plugin folder** and registering it with Claude Code. Do this once — then every command you add to the folder becomes a new slash command automatically.
+
+### One-time setup
+
+**1. Create the plugin folder structure**
 
 ```bash
-mkdir -p ~/.claude/commands
-cp Commands/<command-name>.md ~/.claude/commands/
+mkdir -p ~/.claude/plugins/cache/local-plugins/my-commands/local/commands
+mkdir -p ~/.claude/plugins/cache/local-plugins/my-commands/local/.claude-plugin
 ```
 
-Then invoke it in Claude Code with:
+**2. Create the plugin metadata file**
 
+Create `~/.claude/plugins/cache/local-plugins/my-commands/local/.claude-plugin/plugin.json`:
+
+```json
+{
+  "name": "my-commands",
+  "description": "My local Claude Code commands",
+  "author": {
+    "name": "Your Name"
+  }
+}
 ```
-/<command-name>
+
+**3. Register it in `~/.claude/plugins/installed_plugins.json`**
+
+Add the following entry inside the `"plugins"` object:
+
+```json
+"my-commands@local-plugins": [
+  {
+    "scope": "user",
+    "installPath": "/home/YOUR_USERNAME/.claude/plugins/cache/local-plugins/my-commands/local",
+    "version": "local",
+    "installedAt": "2026-01-01T00:00:00.000Z",
+    "lastUpdated": "2026-01-01T00:00:00.000Z"
+  }
+]
+```
+
+**4. Enable it in `~/.claude/settings.json`**
+
+Add to the `"enabledPlugins"` object:
+
+```json
+"my-commands@local-plugins": true
+```
+
+**5. Restart Claude Code**
+
+### Adding a command
+
+Copy any `.md` file from the `Commands/` directory into your plugin's `commands/` folder:
+
+```bash
+cp Commands/commit-all.md ~/.claude/plugins/cache/local-plugins/my-commands/local/commands/
+```
+
+Then restart Claude Code. The command is immediately available as `/commit-all`.
+
+Each command file can optionally have a frontmatter header:
+
+```markdown
+---
+description: Short description shown in /help
+allowed-tools: [Bash, Read, Edit]
+---
 ```
 
 ### Available commands
@@ -167,6 +224,8 @@ Scans up to 2 levels deep in your home directory for git repositories, shows the
 3. For each dirty repo, shows a diff summary and asks: commit and push? (yes/no/skip)
 4. Commits with a descriptive message and pushes only when you confirm
 5. Prints a final summary of what was committed and what was skipped
+
+> **Note:** The `commit-all.md` file scans `/home/robin-hamers/` by default. Edit the path inside the file to match your own username before using it.
 
 ---
 
