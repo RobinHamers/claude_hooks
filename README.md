@@ -1,10 +1,14 @@
-# Claude Hooks
+# Claude Hooks & Skills
 
-A collection of [Claude Code](https://claude.ai/claude-code) hooks to improve security and control over what Claude can access in your projects.
+A collection of [Claude Code](https://claude.ai/claude-code) hooks and skills to improve security, control, and productivity.
 
 ## What are Claude Code hooks?
 
 Hooks are shell commands that run automatically in response to Claude Code events — before or after tool calls like reading a file, editing code, running a bash command, etc. They let you enforce rules, block actions, or log activity without relying on prompts.
+
+## What are Claude Code skills?
+
+Skills are reusable prompt templates invoked via `/skill-name` in Claude Code. They expand into full prompts, letting you automate repeated workflows (e.g. `/morning-email-briefing`).
 
 ---
 
@@ -111,6 +115,30 @@ vault/*
 
 ---
 
+---
+
+## Skills
+
+Skills live in the `Skills/` directory as `.skill` files. To use them, copy the file into your Claude Code skills directory:
+
+```bash
+cp Skills/morning-email-briefing.skill ~/.claude/skills/
+```
+
+Then invoke it in Claude Code with:
+
+```
+/morning-email-briefing
+```
+
+### Available skills
+
+| Skill | Description |
+|---|---|
+| `morning-email-briefing` | Generates a morning briefing from your emails |
+
+---
+
 ## Contributing
 
-Feel free to open a PR to add new hooks or improve existing ones.
+Feel free to open a PR to add new hooks, skills, or improve existing ones.
