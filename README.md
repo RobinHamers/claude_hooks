@@ -124,6 +124,62 @@ Focuses on common ML/geo packages: `torch`, `numpy`, `pandas`, `geopandas`, `ras
 
 ---
 
+## Skills
+
+Skill files live in `Skills/` as `.skill` files (ZIP archives containing `SKILL.md` and optional scripts). Install via the Claude Code plugin system.
+
+### `morning-email-briefing`
+
+Fetches all new emails from the last 24 hours via Microsoft 365 (Outlook), summarizes each one, drafts a copy-paste-ready reply in a formal-yet-friendly style, and saves everything as a structured Notion page.
+
+**Trigger phrases:** "morning briefing", "check my emails", "email summary", "daily email digest", "what's in my inbox?"
+
+**Output:** A Notion page titled `📬 Email Briefing — [Date]` with urgent/normal sections, 2-line summaries, and draft replies per email. Confirms in chat with a stat line.
+
+**Requires:** Microsoft 365 (Outlook) and Notion connectors enabled in Claude.ai.
+
+### `extent-to-polygon`
+
+Converts a bounding box extent (xmin, ymin, xmax, ymax) with a source EPSG code into a WKT `POLYGON((...))` string, with optional reprojection to another CRS.
+
+**Trigger phrases:** "extent to polygon", "bbox to WKT", "convert extent", "reproject bounding box", any 4 coordinates + EPSG + polygon/WKT request.
+
+**Usage:**
+```bash
+python Skills/extent-to-polygon/scripts/extent_to_polygon.py \
+  --extent <xmin> <ymin> <xmax> <ymax> \
+  --source-epsg <code> \
+  [--target-epsg <code>] \
+  [--output <filepath>]
+```
+
+**Requires:** `pip install pyproj`
+
+### `context-hub`
+
+Fetches curated, versioned API documentation via the [`chub` CLI](https://github.com/andrewyng/context-hub) before writing code against any external library or SDK. Prevents hallucinated method names and stale API assumptions.
+
+**Trigger phrases:** "use context-hub", "check the docs for", "fetch docs", any request to write code using an external library/API, or any time API correctness is uncertain.
+
+**Workflow:**
+```bash
+# 1. Search for the doc
+chub search <library>
+
+# 2. Fetch it
+chub get <id> --lang py   # or --lang js
+
+# 3. Annotate gaps found
+chub annotate <id> "<note>"
+
+# 4. Rate quality
+chub feedback <id> up|down
+```
+
+**Requires:** `npm install -g @aisuite/chub` (or `npm install -g @aisuite/chub --prefix ~/.npm-global` if no global npm write access)
+
+---
+
 ## Settings template
 
 `~/.claude/settings.json`:
@@ -177,3 +233,4 @@ Focuses on common ML/geo packages: `torch`, `numpy`, `pandas`, `geopandas`, `ras
 - `ruff` or `black` — for `/lint-fix`
 - `pandas`, `geopandas`, `rasterio` — for `/explore-dataset`
 - `notify-send` — for `notify-on-stop` hook (optional)
+- `npm` + `@aisuite/chub` — for `context-hub` skill (`npm install -g @aisuite/chub`)
