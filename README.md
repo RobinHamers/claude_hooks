@@ -4,6 +4,16 @@ A personal collection of [Claude Code](https://claude.ai/claude-code) hooks and 
 
 ---
 
+## Quick install via Claude Code
+
+You can ask Claude Code to read this repo, explain what's available, and let you pick what to install. Just open Claude Code and say:
+
+> "Read https://github.com/RobinHamers/claude_hooks, explain what hooks, skills, and commands are available and what each one does, then ask me which ones I want to install before doing anything."
+
+Claude will summarize everything in plain language, ask for your confirmation on each item (or as a whole), then clone the repo, symlink commands, register selected hooks in `settings.json`, and install any skill dependencies — only for what you chose.
+
+---
+
 ## Setup (single machine)
 
 Everything lives in this repo. `~/.claude/` just links/references here — no duplication.
