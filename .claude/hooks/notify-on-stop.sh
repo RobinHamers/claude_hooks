@@ -18,6 +18,11 @@ except:
 
 [ -n "$REASON" ] && MESSAGE="Done: $REASON"
 
+# Append buddy status line
+BUDDY=$(python3 ~/claude_hooks/Scripts/buddy.py notify 2>/dev/null)
+[ -n "$BUDDY" ] && MESSAGE="$MESSAGE
+$BUDDY"
+
 # notify-send (Linux desktop)
 if command -v notify-send &>/dev/null; then
     DISPLAY="${DISPLAY:-:0}" notify-send "$TITLE" "$MESSAGE" --icon=dialog-information 2>/dev/null

@@ -75,9 +75,26 @@ Blocked: 'git push --force' detected. Confirm explicitly if you want to force pu
 
 **Event:** `Stop`
 
-Sends a desktop notification via `notify-send` when Claude finishes a task. Useful when running long operations in the background.
+Sends a desktop notification via `notify-send` when Claude finishes a task. Useful when running long operations in the background. Also includes a one-line buddy status if a companion is active (see below).
 
 Requires `notify-send` (pre-installed on most Linux desktops). Silent no-op if not available.
+
+---
+
+### `buddy-track` — Feed your companion on every tool call
+
+**Event:** `PostToolUse` (all tools, async)
+
+Silently updates your companion's bite count after every tool call. Runs in the background — never blocks Claude. Each tool type is worth a different number of bites:
+
+| Tool | Bites |
+|------|-------|
+| Agent | 4 |
+| Edit / Write | 3 |
+| Bash | 2 |
+| Read / Grep / Glob / other | 1 |
+
+State is persisted to `~/.claude/buddy_state.json`.
 
 ---
 
@@ -131,6 +148,68 @@ Scans all `requirements*.txt` files under `~/` and reports:
 - Imports in Python files with no matching requirement
 
 Focuses on common ML/geo packages: `torch`, `numpy`, `pandas`, `geopandas`, `rasterio`, `transformers`.
+
+---
+
+### `/buddy` — Your Claude Code companion
+
+Displays your companion: ASCII art, evolution stage, mood, lifetime bites, and session stats.
+
+```
+╔══════════════════════════════════════════╗
+║  ✨ SHINY ✨                              ║
+║  Tofu the Hamster                        ║
+╠══════════════════════════════════════════╣
+║                                          ║
+║    🐹  (◕ᴗ◕)   ← Hamster                 ║
+║                                          ║
+╠══════════════════════════════════════════╣
+║  Mood    Excited  (ﾉ◕ヮ◕)ﾉ                ║
+║  Bites   14,203 / 100,000                ║
+║  [████████░░░░░░░░░░] 14%                ║
+║  Session 47 bites · 23 tool calls        ║
+║  Born    2026-04-09                      ║
+╚══════════════════════════════════════════╝
+```
+
+**Your companion is randomly hatched** — name, animal, and rarity are all determined at birth. You don't choose.
+
+| Rarity | Chance | Visual |
+|--------|--------|--------|
+| Common | 60% | Plain ASCII |
+| Uncommon | 25% | Cyan tint |
+| Rare | 10% | Bold yellow + ★ badge |
+| Shiny | 4% | Gold color + ✨ badge |
+| Ultra Rare | 1% | Rainbow colors + 💎 badge |
+
+**Animals:** cat, dog, dragon, frog, bird, bunny, hamster, fox, axolotl, capybara (random at birth)
+
+**Evolution** — 5 stages based on lifetime bites:
+
+| Stage | Bites needed |
+|-------|-------------|
+| Egg | 0 |
+| Stage 2 (hatchling/pup/whelp/...) | 1,000 |
+| Stage 3 (kitten/doggo/drake/...) | 10,000 |
+| Stage 4 (adult) | 100,000 |
+| Stage 5 (legend) | 1,000,000 |
+
+**Moods** — change automatically based on session activity:
+
+| Mood | Trigger |
+|------|---------|
+| Happy | Default |
+| Excited | Bash/Edit-heavy session |
+| Focused | Read/Grep-heavy session |
+| Hungry | No tool calls for 15+ min |
+| Tired | Session running 2+ hours |
+| Alert | A hook blocked something |
+
+**Extra commands:**
+- `/buddy reset` — hatch a new companion (the old one is gone forever — good luck with rarity)
+- The companion also shows compactly in the Claude Code **statusline** and in **Stop notifications**
+
+**Engine:** `Scripts/buddy.py` — all state in `~/.claude/buddy_state.json`
 
 ---
 
@@ -217,6 +296,17 @@ chub feedback <id> up|down
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOUR_USERNAME/claude_hooks/.claude/hooks/buddy-track.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -226,6 +316,16 @@ chub feedback <id> up|down
           }
         ]
       }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 /home/YOUR_USERNAME/claude_hooks/Scripts/buddy.py status",
+    "refreshInterval": 30
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python3 /home/YOUR_USERNAME/claude_hooks/Scripts/buddy.py:*)"
     ]
   }
 }
@@ -237,7 +337,7 @@ chub feedback <id> up|down
 
 - [Claude Code](https://claude.ai/claude-code)
 - `bash`
-- `python3` (used in hook scripts for JSON parsing)
+- `python3` (used in hook scripts for JSON parsing, and for `/buddy`)
 - `git`
 - `gcloud` — for `/gcp-status`
 - `ruff` or `black` — for `/lint-fix`
