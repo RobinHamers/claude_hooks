@@ -267,6 +267,34 @@ chub feedback <id> up|down
 
 **Requires:** `npm install -g @aisuite/chub` (or `npm install -g @aisuite/chub --prefix ~/.npm-global` if no global npm write access)
 
+### `trigger-dag`
+
+Triggers a DAG run on a Google Cloud Composer Airflow instance via the Airflow REST API. Auth is handled via `gcloud auth print-access-token` — no extra credentials needed beyond an active `gcloud` session.
+
+**Trigger phrases:** "trigger dag", "run dag", "start dag", "fire dag", "kick off `<dag-name>`", "run this dag with this config", or any message providing a DAG name + JSON configuration.
+
+**Setup:** Copy `.env.example` to `.env` inside the skill directory and set `AIRFLOW_URI` to your Composer instance URL.
+
+**Usage:**
+```bash
+python Skills/trigger-dag/scripts/trigger_dag.py \
+  --dag-id <dag-name> \
+  --conf '{"key": "value"}'
+
+# or pass a JSON file
+python Skills/trigger-dag/scripts/trigger_dag.py \
+  --dag-id <dag-name> \
+  --conf-file /path/to/config.json
+```
+
+**Requires:** `pip install requests python-dotenv`, `gcloud` authenticated.
+
+### `caveman`
+
+Switches Claude to terse, no-filler communication mode for the session. Eliminates preamble, postamble, meta-commentary, and tool-call announcements. Useful when you want fast, signal-only responses.
+
+**Trigger phrases:** "caveman mode", "be concise", "stop being verbose", "less filler", "terse mode".
+
 ---
 
 ## Settings template
@@ -344,3 +372,4 @@ chub feedback <id> up|down
 - `pandas`, `geopandas`, `rasterio` — for `/explore-dataset`
 - `notify-send` — for `notify-on-stop` hook (optional)
 - `npm` + `@aisuite/chub` — for `context-hub` skill (`npm install -g @aisuite/chub`)
+- `requests`, `python-dotenv` — for `trigger-dag` skill (`pip install requests python-dotenv`)
