@@ -1,0 +1,8 @@
+# Never commit real environment values — these hold instance URIs / site-specific config.
+.env
+*.env
+!.env.example
+
+# Local state
+__pycache__/
+*.pyc
